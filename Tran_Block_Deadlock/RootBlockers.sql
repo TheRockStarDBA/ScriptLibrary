@@ -1,4 +1,31 @@
+--My script (not sure about Slava's) may have issues for very-short-lived blocking. More troubleshooting/research is needed here.
+
 declare @blockingchain table (session_id int, ec int, blocking_id int, blocking_ec int, wait_type varchar(100), resource_description varchar(255))
+
+
+/* My script was built after viewing this blog post by Slava: http://blogs.msdn.com/b/slavao/archive/2006/11/14/sqlosdmv-s-continue.aspx
+--Here's his take on a task chain.
+WITH TaskChain (waiting_task_address, blocking_task_address, ChainId, Level)
+AS
+(-- Anchor member definition: use self join so that we output only tasks that blocking others and remove dupliates
+ SELECT DISTINCT A.waiting_task_address, A.blocking_task_address, A.waiting_task_address As ChainId, 0 AS Level
+ FROM sys.dm_os_waiting_tasks as A
+	JOIN sys.dm_os_waiting_tasks as B
+		ON A.waiting_task_address = B.blocking_task_address
+ WHERE A.blocking_task_address IS NULL
+	UNION ALL
+-- Recursive member definition: Get to the next level waiting tasks
+ SELECT A.waiting_task_address, A.blocking_task_address, B.ChainId, Level + 1
+ FROM sys.dm_os_waiting_tasks AS A
+	JOIN TaskChain AS B 
+		ON B.waiting_task_address = A.blocking_task_address
+)
+select waiting_task_address, blocking_task_address, ChainId, Level  
+from TaskChain
+order by ChainId 
+*/
+
+
 INSERT INTO @blockingchain 
 SELECT case when session_id is null 
 		then convert(int, waiting_task_address) 
