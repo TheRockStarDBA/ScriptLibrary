@@ -83,7 +83,7 @@ SELECT db, file_type,
   ORDER BY io_stall DESC;
 
 
---this basic one is mine
+--these last 2 are mine
 select dbname, numReads, convert(decimal(15,1),numBytesRead/1024./1024./1024.) as numGBread, 
 	convert(decimal(15,1),ioReadStall_ms/1000./3600.) as ioReadStall_hr, 
 	numWrites, convert(decimal(15,1),numBytesWritten/1024./1024./1024.) as numGBwritten, 
@@ -102,3 +102,21 @@ where 1=1
 group by dbname 
 ) ss2
 order by (numBytesRead + numBytesWritten) desc 
+
+select *
+from (
+select DB_NAME(database_id) as DBName, 
+	--vfs.file_id, 
+	SUM(CONVERT(bigint,vfs.num_of_reads)) as [#Reads], 
+	SUM(vfs.num_of_bytes_read)/1024/1024/1024 as GBRead, 
+	SUM(vfs.io_stall_read_ms)/SUM(vfs.num_of_reads) as Avg_ReadLatency_ms, 
+	SUM(vfs.io_stall_read_ms) / 1000 /60 as TotalHoursLost_Reads,
+	SUM(vfs.num_of_writes) as [#Writes], 
+	SUM(vfs.num_of_bytes_written)/1024/1024/1024 as GBWritten,
+	SUM(vfs.io_stall_write_ms)/SUM(vfs.num_of_writes) as Avg_WriteLatency_ms,
+	SUM(vfs.io_stall_write_ms) / 1000 / 60  as TotalHoursLost_Writes
+from sys.dm_io_virtual_file_stats(null,null) vfs
+where vfs.num_of_writes > 0 and vfs.num_of_reads > 0
+group by DB_NAME(database_id)
+) ss
+order by GBRead + GBWritten desc 
