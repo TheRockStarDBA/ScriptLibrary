@@ -42,7 +42,7 @@ where (request_session_id = @request_session_id
 	)
 and (
 	1 = case when @ignore_granted = 'Y'
-		request_status = 'GRANT' THEN 0
+		and request_status = 'GRANT' THEN 0
 		ELSE 1 END
   )
 ) SS
