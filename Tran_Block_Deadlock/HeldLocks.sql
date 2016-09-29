@@ -1,5 +1,9 @@
-declare @request_session_id int = null,
-	@ignore_granted char(1) = 'Y';		--null for all spids; no, you shouldn't write code this way in an actual app.
+--Returns a list of locks (by default, only those not granted, i.e. waiting or converting) 
+-- requested by various sessions across the instance. Some reference-lookup work is done
+-- to convert ID values to their respective names.
+
+declare @request_session_id int = null,		--null for all spids; no, you shouldn't write code this way in an actual app.
+	@ignore_granted char(1) = 'Y';		
 
 SELECT request_session_id, ec,
 	resource_type, resource_subtype, resource_description, request_mode,
